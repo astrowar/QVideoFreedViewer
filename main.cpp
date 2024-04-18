@@ -8,12 +8,12 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
     QGuiApplication app(argc, argv);
-
     QQmlApplicationEngine engine;
-
+    
     //register the VideoClient class to use it in qml 
-    qmlRegisterType<VideoClient>("VideoClient", 1, 0, "VideoClient");
-    qmlRegisterType<ImageDisplay>("ImageDisplay", 1, 0, "ImageDisplay");
+    qmlRegisterType<VideoClient>("VideoClientModule", 1, 0, "VideoClient");
+    qmlRegisterType<ImageDisplay>("VideoClientModule", 1, 0, "ImageDisplay");
+    qmlRegisterType<GraphicDisplay>("VideoClientModule", 1, 0, "GraphicDisplay");
 
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));

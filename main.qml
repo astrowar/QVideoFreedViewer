@@ -5,8 +5,8 @@ import QtQuick.Layouts 1.15
 import QtQuick.Controls.Material 2.15
 import QtMultimedia  2
 
-import VideoClient 1.0
-import ImageDisplay 1.0
+import VideoClientModule 1.0
+ 
 
 Window {
     id:root 
@@ -14,6 +14,10 @@ Window {
     height: 480
     visible: true
     title: qsTr("Thunter Viewer")
+
+    Material.theme: Material.Dark
+    Material.accent: Material.DeepOrange
+    Material.background:  Material.Black
 
     VideoClient{  id: videoClientA  }
     VideoClient{  id: videoClientB  }
@@ -25,11 +29,15 @@ Window {
         if (currentIndex === 1) {  return ("http://127.0.0.1:5000/video_feed") }
         if (currentIndex === 2) {  return("http://127.0.0.1:5000/video_bw") }
         if (currentIndex === 3) {  return ("http://127.0.0.1:5000/video_yolo") }
+        if (currentIndex === 4) {  return ("http://127.0.0.1:5000/video_web") }
 
         return "";
        }
 
-
+    Rectangle {
+        color:"#27272a"
+        anchors.fill: parent
+    }
 
     RowLayout{
         anchors.fill: parent
@@ -43,88 +51,96 @@ Window {
                    Layout.fillWidth: true
 
                    Rectangle {
-                       color:"#40F02020"
+                       color:"transparent"
                        Layout.fillHeight: true
                        Layout.fillWidth: true
-
-                       ImageDisplay{
-                           id: imageDisplayA
-                           anchors.horizontalCenter : parent.horizontalCenter
-                           anchors.verticalCenter : parent.verticalCenter
-                           width: parent.width
-                           height: parent.height
-                       }
-                       ComboBox {
+                      ComboBox {
                            id: comboA
+                           height:  40
                             model: ["None","CAM", "BW", "YOLO"]
                             onCurrentIndexChanged: {
                                    videoClientA.connectHttp(nameServerURL(currentIndex) )
+                                   fpsMeter.clear()
                               }
                          }
+                       ImageDisplay{
+                           id: imageDisplayA
+                           anchors.horizontalCenter : parent.horizontalCenter
+                           anchors.bottom : parent.bottom  
+                           width: parent.width
+                           height: parent.height - comboC.height
+                       }
+ 
                    }
                     Rectangle {
-                        color:"blue"
+                        color:"transparent"
                         Layout.fillHeight: true
                         Layout.fillWidth: true
-                        ImageDisplay{
-                            id: imageDisplayB
-                            anchors.horizontalCenter : parent.horizontalCenter
-                            anchors.verticalCenter : parent.verticalCenter
-                            width: parent.width
-                            height: parent.height
-                        }
                         ComboBox {
                            id: comboB
-                             model: ["None","CAM", "BW", "YOLO"]
+                           height:  40
+                             model: ["None","CAM", "BW", "YOLO"] 
                             onCurrentIndexChanged: {
                                 videoClientB.connectHttp(nameServerURL(currentIndex) )
                             }
-                         }
+                         }                        
+                        ImageDisplay{
+                            id: imageDisplayB
+                            anchors.horizontalCenter : parent.horizontalCenter
+                            anchors.bottom : parent.bottom  
+                            width: parent.width
+                            height: parent.height - comboC.height
+                        }
+
                     }
                  }
                  ColumnLayout{
                      Layout.fillHeight: true
                      Layout.fillWidth: true
 
-                    Rectangle {
-                        color:"green"
+                    Rectangle {              
+                        color:"transparent"
                         Layout.fillHeight: true
                         Layout.fillWidth: true
-                        ImageDisplay{
-                            id: imageDisplayC
-                            anchors.horizontalCenter : parent.horizontalCenter
-                            anchors.verticalCenter : parent.verticalCenter
-                            width: parent.width
-                            height: parent.height
-                        }
+
                         ComboBox {
                            id: comboC
-                            model: ["None","CAM", "BW", "YOLO"]
+                           height:  40
+                            model: ["None","CAM", "BW", "YOLO"]                         
                             onCurrentIndexChanged: {
                                videoClientC.connectHttp(nameServerURL(currentIndex) )
                             }
                          }
 
+                        ImageDisplay  {
+                            id: imageDisplayC
+                            anchors.horizontalCenter : parent.horizontalCenter
+                            anchors.bottom : parent.bottom                           
+                            width: parent.width
+                            height: parent.height - comboC.height
+                        }
+                    
+
                     }
                      Rectangle {
-                         color:"yellow"
+                         color:"transparent"
                          Layout.fillHeight: true
-                         Layout.fillWidth: true
-                         ImageDisplay{
-                             id: imageDisplayD
-                             anchors.horizontalCenter : parent.horizontalCenter
-                             anchors.verticalCenter : parent.verticalCenter
-                             width: parent.width
-                             height: parent.height
-                         }
-                        ComboBox {
+                         Layout.fillWidth: true 
+                      ComboBox {
                            id: comboD
-                            model: ["None","CAM", "BW", "YOLO"]
+                           height:  40
+                            model: ["None","CAM", "BW", "YOLO", "WEB"	]   
                             onCurrentIndexChanged: {
                                 videoClientD.connectHttp(nameServerURL(currentIndex) )
                             }
                          }
-
+                         ImageDisplay{
+                             id: imageDisplayD
+                             anchors.horizontalCenter : parent.horizontalCenter
+                             anchors.bottom : parent.bottom  
+                             width: parent.width
+                             height: parent.height - comboC.height
+                         } 
                      }
                  }
         }
@@ -135,6 +151,39 @@ Window {
             Layout.minimumWidth: 200
             Layout.maximumWidth: 200
             Layout.fillHeight: true
+             
+
+             Rectangle {   
+                    width: 150
+                    height: 150
+                    color: "transparent"
+                    border.color : Material.accent
+                    border.width: 2
+
+                    ColumnLayout{
+                             anchors.fill: parent
+                             spacing: 4
+                            GraphicDisplay {
+                                id:fpsMeter                                 
+                                //height: 120                                
+                                lineColor : "white"
+
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.margins : 4      
+                            }
+                            Text{
+                                Layout.alignment: Qt.AlignLeft
+                                // only show if videoClientA.frametime is not zero
+                                text : "FPS:" +  (videoClientA.frametime > 0 ? (1000.0/(videoClientA.frametime)).toFixed(0) : "0.0" )
+                                color: Material.accent
+                                font.pixelSize: 20
+                                Layout.margins : 4
+                                 
+                            }
+                    }
+             }
+
                 Rectangle {
                     id : connectedInfo ;
                     //red or green , defined by  videoClient.connected property
@@ -145,20 +194,25 @@ Window {
                 }
                 Button {
                     text: "Connect"
+                    Layout.fillWidth: true
                     onClicked: {
-                         comboA.currentIndex = 1
+                         comboA.currentIndex = 3
                          comboB.currentIndex = 2
-                         comboC.currentIndex = 3
+                         comboC.currentIndex = 1
+                         comboD.currentIndex = 4 
+                    }
+                }
+                Button {
+                    text: "Disconnect"
+                    Layout.fillWidth: true
+                    onClicked: {
+                         comboA.currentIndex = 0
+                         comboB.currentIndex = 0
+                         comboC.currentIndex = 0
                          comboD.currentIndex = 0 
                     }
                 }
 
-                Button {
-                    text: "Connect B"
-                    onClicked: {
-                      //  videoClientB.connectHttp("http://127.0.0.1:5000/video_feed")
-                    }
-                }
             }
         }
 
@@ -167,14 +221,20 @@ Window {
         videoClientA.setImageDisplay(imageDisplayA)
         videoClientB.setImageDisplay(imageDisplayB)
         videoClientC.setImageDisplay(imageDisplayC)
-        videoClientD.setImageDisplay(imageDisplayD)
+        videoClientD.setImageDisplay(imageDisplayD)         
     }
       
-
-     Timer {
-        interval: 500; running: true; repeat: true
-       // onTriggered:  frame.source =   videoClient.requestFrame();
+    Timer {
+        interval: 200
+        running: true
+        repeat: true
+        onTriggered: {
+            // frametimer is in milliseconds
+            if (videoClientA.frametime > 0 )fpsMeter.insertPoint(  1000.0/(videoClientA.frametime )  )
+            
+        }
     }
+     
 
 
 

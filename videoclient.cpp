@@ -61,13 +61,68 @@ void ImageDisplay::paint(QPainter *painter) {
         //draw an circle ans a X inside it
         int radius = std::min( boundingRect() .width() , boundingRect().height()) / 2;
         auto center = boundingRect().center();
-        painter->drawEllipse(center, radius, radius);
-        
-    
- 
-
+        painter->drawEllipse(center, radius, radius); 
      }
 }
+
+// ==================================================================================================
+// =========   Graph 
+
+GraphicDisplay::GraphicDisplay(QQuickItem *parent) : QQuickPaintedItem(parent) { 
+    setAcceptedMouseButtons(Qt::AllButtons);
+    this->lineColor = QColor(255, 255, 255);
+    
+}
+
+void GraphicDisplay::insertPoint(float relativeValue ) {
+    values.append( relativeValue) ;
+    if (values.size() > 50) {
+        values.pop_front();
+    }
+  
+    update();
+}
+
+void GraphicDisplay::clear() {
+    values.clear();
+    update();
+}
+
+void GraphicDisplay::paint(QPainter *painter) {
+    if (values.size() == 0) {
+        return;
+    }
+    QColor m_color = QColor(255, 255, 255);
+    QPen pen(m_color, 2);
+    painter->setPen(pen);
+    painter->setRenderHints(QPainter::Antialiasing, true); 
+    //increase point size
+    painter->setPen(QPen(this->lineColor, 2));
+    //read mean_values
+    float max_value = 0.0;
+    { 
+        for (int i = 0; i < values.size(); i++) {
+            max_value = std::max(max_value, values[i]);
+        }
+    }
+    if (max_value < 0.0001f) {
+        max_value = 1.000f;
+    }
+ 
+    //draw values as connected lines 
+    
+    QPointF preview_point  ;
+    for (int i = 0; i < values.size(); i++) {
+        float p = 0.8f* values[i] / max_value;
+        float x = i * boundingRect().width() / 50;
+        float y = boundingRect().height() - p * boundingRect().height();
+        QPointF actual_point = QPointF(x, y);
+        if (i ==0 )  preview_point = actual_point;
+        painter->drawLine( preview_point , actual_point );
+        preview_point = actual_point;
+    }
+}
+
 
 //==================================================================================================
 
@@ -80,15 +135,13 @@ VideoClient::VideoClient(QObject *parent) : QObject(parent)
     connected = false;
     reply = nullptr;
     imageDisplay = nullptr;
+    frametime = 0;
  
 }
 
   void VideoClient::setImageDisplay( QVariant imageDisplay)
   {
     this->imageDisplay = imageDisplay.value<ImageDisplay*>();
-    std::cout << "setImageDisplay" << std::endl;
-        //connect(this, SIGNAL(imageReady(QImage)), display, SLOT(setImage(QImage)));
-
     }
  
 
@@ -98,6 +151,7 @@ void VideoClient::connectHttp(const QUrl &requestedUrl)
     if (reply != nullptr) {
         reply->abort();
          reply = nullptr;
+         setFrametime( 0);
     }
 
     startRequest(requestedUrl);
@@ -121,6 +175,7 @@ void  VideoClient::startRequest(const QUrl &requestedUrl)
             {
                 reply->abort();
                 reply = nullptr;
+                setFrametime( 0);
             }
             return ;
     }
@@ -136,6 +191,7 @@ void  VideoClient::startRequest(const QUrl &requestedUrl)
     if (reply != nullptr) {
         reply->abort();
         reply = nullptr;
+        setFrametime( 0);
     }
 
     reply = qnam.get(req);
@@ -159,36 +215,65 @@ void VideoClient::httpFinished()
     connected = false  ;
     emit connectedChanged();  
 }
+ 
+std::vector<std::string> getHeaderComponents(const QByteArray &data  )
+{
+   // headers compionentes are splited by "\r\n"
+    std::vector<std::string> headers;
+    std::string header;
+    for (int i = 0; i < data.size(); i++)
+    {
+        if (data[i] == '\r' && data[i + 1] == '\n')
+        {
+            headers.push_back(header);
+            header = "";
+            i++;
+        }
+        else
+        {
+            header += data[i];
+        }
+    }
+     headers.push_back(header);
+    return headers;
 
-void loadQImage(QImage &image,   QByteArray &data)
+}
+
+void loadQImage(QImage &image,  int &iFrametime ,   QByteArray &data)
 {
     //data starts with Content-Type: image/jpeg\n\n
     //search for "\r\n\r\n" in the data
+    iFrametime = 0 ;
     for (int i = 0; i < data.size() - 4; i++)
     {
         if (data[i] == '\r' && data[i + 1] == '\n' && data[i + 2] == '\r' && data[i + 3] == '\n')
         {            
-             data = data.mid(i + 4); 
+ 
+            std::vector<std::string> ret =  getHeaderComponents ( data.mid(0, i) ); 
+            if ( ret.size() > 2 ) { 
+                //std::cout << "header frame time  " << ret[2] << std::endl;
+                iFrametime = std::stoi(ret[2]);
+            }
+            data = data.mid(i + 4); 
             break;
         }
-    } 
- 
-    image.loadFromData(data , "JPEG");
- 
-
+    }  
+    image.loadFromData(data , "JPEG"); 
 }
  
 
 void VideoClient::httpReadyRead()
 {
 
-   connected = true ;
+    connected = true ;
     emit connectedChanged();     
-
     QByteArray data = reply->readAll();
-
     QImage image;
-    loadQImage(image, data);
+    int iFrametime = 0;
+    loadQImage(image, iFrametime , data);
+    setFrametime(iFrametime);
+    
+
     if (imageDisplay!=nullptr)    imageDisplay->setImage(image);
     emit imageReady(image);
 
@@ -213,6 +298,7 @@ void VideoClient::cancelDownload()
 { 
     //httpRequestAborted = true;
     reply->abort();
+    setFrametime( 0);
 }
 
 QByteArray IntToArray(qint32 source) //Use qint32 to ensure that the number have 4 bytes
