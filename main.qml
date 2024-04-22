@@ -23,6 +23,7 @@ Window {
     VideoClient{  id: videoClientB  }
     VideoClient{  id: videoClientC  }
     VideoClient{  id: videoClientD  }
+    SensorClient{ id: sensorClientTemp  }
 
     function nameServerURL( currentIndex ){
         if (currentIndex === 0) {  return ("") }
@@ -152,6 +153,10 @@ Window {
             Layout.maximumWidth: 200
             Layout.fillHeight: true
              
+             Text{
+                color: "white"
+               text: "SENSOR " + sensorClientTemp.value
+             }
 
              Rectangle {   
                     width: 150
@@ -218,20 +223,39 @@ Window {
 
     //on load windows
     Component.onCompleted: {
-        videoClientA.setImageDisplay(imageDisplayA)
-        videoClientB.setImageDisplay(imageDisplayB)
-        videoClientC.setImageDisplay(imageDisplayC)
-        videoClientD.setImageDisplay(imageDisplayD)         
+        sensorClientTemp.connectHttp("http://127.0.0.1:5000/sensor")	
+       // videoClientA.setImageDisplay(imageDisplayA)
+       // videoClientB.setImageDisplay(imageDisplayB)
+       // videoClientC.setImageDisplay(imageDisplayC)
+       // videoClientD.setImageDisplay(imageDisplayD)   
+ 
+    }
+
+    Connections { 
+        target: videoClientA
+        onImageReady:function(image) { imageDisplayA.setImage(image) }
+    }
+    Connections { 
+        target: videoClientB
+        onImageReady: function(image) {imageDisplayB.setImage(image)}
+    }
+    Connections { 
+        target: videoClientC
+        onImageReady: function(image) {imageDisplayC.setImage(image)}
+    }
+    Connections { 
+        target: videoClientD
+        onImageReady: function(image) {imageDisplayD.setImage(image)}
     }
       
     Timer {
-        interval: 200
+        interval: 300
         running: true
         repeat: true
         onTriggered: {
             // frametimer is in milliseconds
             if (videoClientA.frametime > 0 )fpsMeter.insertPoint(  1000.0/(videoClientA.frametime )  )
-            
+            sensorClientTemp.update()            
         }
     }
      

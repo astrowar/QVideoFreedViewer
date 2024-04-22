@@ -18,8 +18,10 @@ class ImageDisplay : public QQuickPaintedItem
   Q_OBJECT
 public:
   ImageDisplay(QQuickItem *parent = nullptr);
-  void setImage(QImage image);
+  //void setImage(QImage image);
   void paint(QPainter *painter) override;
+public slots:    
+  void setImage(QImage image);
 private:
   QImage  m_image; 
 };
@@ -57,7 +59,7 @@ public:
     Q_PROPERTY(bool connected READ getConnected    NOTIFY connectedChanged) ;
     Q_PROPERTY(int frametime READ getFrametime WRITE setFrametime NOTIFY  frametimeChanged) ;
     Q_INVOKABLE void connectHttp(const QUrl &requestedUrl);
-    Q_INVOKABLE void setImageDisplay( QVariant imageDisplay);  
+    //Q_INVOKABLE void setImageDisplay( QVariant imageDisplay);  
     void startRequest(const QUrl &requestedUrl);
      
 
@@ -91,9 +93,9 @@ private:
     int frametime;
     int getFrametime() const { return frametime; }
     void setFrametime(int value) { if(frametime != value){ frametime = value ;  emit frametimeChanged(); } }
-    ImageDisplay *imageDisplay;
+    //ImageDisplay *imageDisplay;
     
-   
+   void emitDisconeected();
 
 };
 

@@ -19,7 +19,7 @@ ImageDisplay::ImageDisplay(QQuickItem *parent) : QQuickPaintedItem(parent) {
 
 void ImageDisplay::setImage(QImage  image) {
   m_image = image;   
-  update();
+  update(); 
 }
 
 void ImageDisplay::paint(QPainter *painter) {
@@ -134,15 +134,15 @@ VideoClient::VideoClient(QObject *parent) : QObject(parent)
     connect(&qnam, SIGNAL(finished(QNetworkReply*)), this, SLOT(httpFinished()));
     connected = false;
     reply = nullptr;
-    imageDisplay = nullptr;
+    //imageDisplay = nullptr;
     frametime = 0;
  
 }
 
-  void VideoClient::setImageDisplay( QVariant imageDisplay)
-  {
-    this->imageDisplay = imageDisplay.value<ImageDisplay*>();
-    }
+//   void VideoClient::setImageDisplay( QVariant imageDisplay)
+//   {
+//     this->imageDisplay = imageDisplay.value<ImageDisplay*>();
+//  }
  
 
 void VideoClient::connectHttp(const QUrl &requestedUrl)
@@ -157,6 +157,15 @@ void VideoClient::connectHttp(const QUrl &requestedUrl)
     startRequest(requestedUrl);
 }
 
+   void VideoClient::emitDisconeected(){
+        //create an empty image with  320x240 black
+        QImage blankimage(320, 240, QImage::Format_RGB32);
+        blankimage.fill(Qt::black);
+       // if (imageDisplay!=nullptr)    imageDisplay->setImage(blankimage);
+        emit imageReady(blankimage); 
+       
+   }
+
 
  void printDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 {
@@ -166,8 +175,9 @@ void VideoClient::connectHttp(const QUrl &requestedUrl)
 void  VideoClient::startRequest(const QUrl &requestedUrl)
 {
     QUrl url = requestedUrl;
+    emitDisconeected( );
 
-     if (imageDisplay!=nullptr)    imageDisplay->setImage( QImage() );
+    // if (imageDisplay!=nullptr)    imageDisplay->setImage( QImage() );
     //if is too short 
     if ( url.toString().length() < 5)
     {
@@ -210,10 +220,10 @@ void VideoClient::httpFinished()
 {
     std::cout << "httpFinished" << std::endl;
     QByteArray data = reply->readAll();
-    std::cout << "data size " << data.size() << std::endl;
-    QImage image; 
+    std::cout << "data size " << data.size() << std::endl; 
     connected = false  ;
-    emit connectedChanged();  
+    emit connectedChanged();
+    //emitedDisconeected();
 }
  
 std::vector<std::string> getHeaderComponents(const QByteArray &data  )
@@ -252,7 +262,16 @@ void loadQImage(QImage &image,  int &iFrametime ,   QByteArray &data)
             std::vector<std::string> ret =  getHeaderComponents ( data.mid(0, i) ); 
             if ( ret.size() > 2 ) { 
                 //std::cout << "header frame time  " << ret[2] << std::endl;
-                iFrametime = std::stoi(ret[2]);
+                int frame_start =0 ;
+                for (frame_start = 0;  frame_start < ret.size() ; frame_start++)
+                {
+                    //start with --frame 
+                    if (ret[frame_start].rfind("--frame", 0) == 0) 
+                    {
+                        break;
+                    }
+                }
+                iFrametime = std::stoi(ret[frame_start+2]);
             }
             data = data.mid(i + 4); 
             break;
@@ -264,17 +283,15 @@ void loadQImage(QImage &image,  int &iFrametime ,   QByteArray &data)
 
 void VideoClient::httpReadyRead()
 {
-
     connected = true ;
     emit connectedChanged();     
     QByteArray data = reply->readAll();
     QImage image;
     int iFrametime = 0;
     loadQImage(image, iFrametime , data);
-    setFrametime(iFrametime);
-    
+    setFrametime(iFrametime);    
 
-    if (imageDisplay!=nullptr)    imageDisplay->setImage(image);
+    //if (imageDisplay!=nullptr)    imageDisplay->setImage(image);
     emit imageReady(image);
 
 }

@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include "videoclient.h"
+#include "sensorclient.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +15,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<VideoClient>("VideoClientModule", 1, 0, "VideoClient");
     qmlRegisterType<ImageDisplay>("VideoClientModule", 1, 0, "ImageDisplay");
     qmlRegisterType<GraphicDisplay>("VideoClientModule", 1, 0, "GraphicDisplay");
+    qmlRegisterType<SensorClient>("VideoClientModule", 1, 0, "SensorClient");
 
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
